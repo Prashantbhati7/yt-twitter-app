@@ -1,6 +1,11 @@
 // const dotenv = require("dotenv");
 import connection from "./db/index.js";
 import dotenv from "dotenv";
+// import main from "./db/index.js";
+
+import { app } from "./app.js";
+
+
 dotenv.config({
 
 });
@@ -8,8 +13,22 @@ dotenv.config({
 
 
 
-connection();
+connection().then(()=>{
+    app.listen(process.env.PORT,()=>{
+        console.log(`server is listening to port ${process.env.PORT}`);
+    })
+}).catch((error)=>{
+    console.log(error);
+})
 
+
+
+
+// main().then((result)=>{
+//     console.log("Connected to datbase successfully ",result.connection.host);
+// }).catch((error)=>{
+//     console.log("error ",error);
+// })
 
 
 

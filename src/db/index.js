@@ -12,3 +12,10 @@ const connection = async ()=>{
 }
 
 export default connection;
+
+// const main = async()=>{
+//     const result = await mongoose.connect(`${process.env.MONGODB_URL}/${db_name}`);
+//     return result;
+// }
+
+// export default main;
