@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { useDebugValue } from "react";
 const userschema = new mongoose.Schema({
     username:{
         type:String,
@@ -54,7 +53,7 @@ const userschema = new mongoose.Schema({
 
 userschema.pre("save",async function(next){
     if (this.isModified("password")){
-        this.password = bcrypt.hash(this.password,10);
+        this.password = await bcrypt.hash(this.password,10);
     }
     next();
 })       // not arrow function because we want this reference here 

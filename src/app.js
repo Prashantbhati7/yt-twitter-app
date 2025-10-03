@@ -17,6 +17,10 @@ app.use(express.static("public"))      // To store some images,pdf in local fold
 
 app.use(cookieParser())
 
+
+app.get("/",(req,res)=>{
+    res.send("working server");
+})
 //Route import 
 
 import userRoute from "./routes/user.routes.js";
