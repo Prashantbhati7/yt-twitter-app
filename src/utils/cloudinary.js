@@ -1,31 +1,33 @@
 import { v2 as cloudinary} from "cloudinary"; 
-import { error } from "console";
 import fs from "fs";             // Node js defalt lib to read write remove etc 
+import { ApiError } from "./apiError.js";
 
 
 cloudinary.config({
-    cloud_name:process.env.CLODINARY_CLOUD_NAME,
+    cloud_name:process.env.CLOUDINARY_CLOUD_NAME,
     api_key:process.env.CLOUDINARY_API_KEY,
-    api_secret:process.env.CLODINARY_API_SECRET,
+    api_secret:process.env.CLOUDINARY_API_SECRET,
 })
 
-
 const uploadOnCloudinary = async (localfilepath)=>{
-    try{
-        if (!localfilepath){
-            throw error.json({message:"file not found "});
-            return null;
-        }
-        const res = await cloudinary.uploader.upload(localfilepath,{
-            resource_type:"auto",  
-        })      // file has been uploaded 
-        console.log("file has been uploaded ",res.url)
-        return res;
-    }
-    catch(error){
-        fs.unlinkSync(localfilepath)         // remove locally saved temp file as upload operation failes 
+   // console.log("file path for cloudinary is ",localfilepath);
+   try {
+        if (!localfilepath) return null
+        //upload the file on cloudinary
+        const response = await cloudinary.uploader.upload(localfilepath, {
+            resource_type: "auto"
+        })
+        
+        fs.unlinkSync(localfilepath)
+        console.log("uploaded on cloudinary ",localfilepath);
+        
+        return response;
+    }  catch (error) {
+        console.log("errot on uploading on clodinary ",localfilepath);
+        fs.unlinkSync(localfilepath) // remove the locally saved temporary file as the upload operation got failed
         return null;
-    }
+}
+
 }
 
 

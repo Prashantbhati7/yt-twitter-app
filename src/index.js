@@ -1,15 +1,13 @@
-// const dotenv = require("dotenv");
-import connection from "./db/index.js";
 import dotenv from "dotenv";
-// import main from "./db/index.js";
-
-import { app } from "./app.js";
-
 
 dotenv.config({
-
+    path:'./.env'
 });
 
+
+import connection from "./db/index.js";
+
+import { app } from "./app.js";
 
 
 
