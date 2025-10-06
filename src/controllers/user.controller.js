@@ -9,6 +9,29 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 import { ApiResponse } from "../utils/apiResponse.js";
 
+
+
+const generateAccessAndRefreshToken = async(userId)=>{
+    try{    
+        const user = await User.findById(userId);
+        const accessToken = await user.generateAccessToken();
+        const refreshToken = await user.generateRefreshoken();
+
+
+        // saving refresh token of that particular user in database 
+
+        user.refreshToken = refreshToken;
+        await user.save({validateBeforeSave:false});
+
+        return {refreshToken,accessToken};
+
+    }catch(error){
+        throw new ApiError(500,"there is an error while generating access token and refresh token. ");
+    }
+}
+
+
+
 const registeruser = asyncHandler(async(req ,res)=>{
     //console.log(req.body);
 
@@ -37,7 +60,8 @@ const registeruser = asyncHandler(async(req ,res)=>{
 
     //console.log(req.files);
     const  avatarLocalPath = req.files?.avatar[0]?.path
-    const coverimageLocalPath = req.files?.coverimage[0]?.path
+    let coverimageLocalPath;
+    if (req.files && Array.isArray(req.files.coverimage) && req.files.coverimage.length>0 ) coverimageLocalPath = req.files.coverimageLocalPath[0].path; 
 
 
     // console.log("avatatlocalpath ",avatarLocalPath);
@@ -72,4 +96,54 @@ const registeruser = asyncHandler(async(req ,res)=>{
 })
 
 
-export {registeruser,};
+const LoginUser = asyncHandler(async(req,res)=>{
+    const {email,username,password} = req.body;
+    if (!username && !email){
+        throw new ApiError(400,"username or email required ");
+    }
+    const existinguser =await User.findOne({$or:[{username},{email}]});
+    if (!existinguser) {
+        throw new ApiError(400,"No user with these credential exists,try sign up ");
+    }
+
+    const isvalid = await existinguser.isCorrectPass(password);
+    if (!isvalid) throw new ApiError(401,"password is wrong ");
+
+    const {refreshToken,accessToken} = await generateAccessAndRefreshToken(existinguser._id);
+
+
+    // to send to user without password and refreshtoken 
+    const loggedinUser = await User.findById(existinguser._id).select("-password -refreshToken");
+    
+    // to send cookies 
+    const options = {
+        httpOnly:true,
+        secure:true,
+    }
+    return res.status(200).cookie("accessToken ",accessToken,options).cookie("refreshToken ",refreshToken,options).json(
+        new ApiResponse(200,{       //json response totaly upto you what and how you want to send things 
+            user:loggedinUser,accessToken,refreshToken       // sending accesstoken , referesh token to user if 
+        },"user Logged in successfully ! ")
+    );
+
+})
+
+
+const logoutUser = asyncHandler(async(req,res)=>{          // we need to create a middleware to logout user 
+    await User.findByIdAndUpdate(req.user._id,
+        {
+        $set:
+        {
+        refreshToken:undefined
+        },
+    },{new:true});
+
+    const options = {
+        httpOnly:true,
+        secure:true
+    }
+    return res.status(200).clearCookie("accessToken",options).clearCookie("refreshToken",options).json(new ApiResponse(200,{},"user loggedOut seccessfully "));
+
+})
+
+export {registeruser,LoginUser,logoutUser};
