@@ -9,6 +9,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 
 import jwt from "jsonwebtoken";
 import { compareSync } from "bcrypt";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async(userId)=>{
     try{    
@@ -308,4 +309,51 @@ const getUserChannelProfile  = asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,channel[0],"Channel profile Detail sent Successfully "))
 })
 
-export {registeruser,LoginUser,logoutUser,refreshAccessToken,changePassword,getCurrUser,UpdateAccountDetails,updataAvatar,updateCover,getUserChannelProfile};
+const getWatchHistory = asyncHandler(async(req,res)=>{
+    const user = User.aggregate([
+        {
+            $match:{
+                _id: new mongoose.Types.ObjectId(req.user._id)      //  here _id:req.user._id will not work because it gives string not id and now we are not performing operations using moongose so it will not auto converted to ObjectId 
+            }
+        },
+        {
+            $lookup:{
+                from:'videos', // model name
+                localField:'watchHistory',
+                foreignField:'_id',
+                as:'watchedHistory',
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:'users',
+                            localField:'owner',
+                            foreignField:'_id',
+                            as:'owner',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        fullname:1,
+                                        username:1,
+                                        avatar:1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            owner:{
+                                $first:"$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        
+    ])
+    if (!user) return new ApiError(401,"User Not found");
+    return res.status(200).json(new ApiResponse(200,user[0].watchHistory,"History Fetched Successfully "))
+})
+
+export {registeruser,LoginUser,logoutUser,refreshAccessToken,changePassword,getCurrUser,UpdateAccountDetails,updataAvatar,updateCover,getUserChannelProfile,getWatchHistory};
