@@ -203,7 +203,7 @@ const UpdateAccountDetails = asyncHandler(async(req,res)=>{
     if (!fullname || !username ){
         throw new ApiError(400,"All Fiels are Required ");
     }
-    const user = User.findByIdAndUpdate(req.user?._id,
+    const user =await User.findByIdAndUpdate(req.user?._id,
         {
             $set:{
                 fullname:fullname,
@@ -246,4 +246,66 @@ const updateCover = asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,user,"cover Image Updated "));
 })
 
-export {registeruser,LoginUser,logoutUser,refreshAccessToken,changePassword,getCurrUser,UpdateAccountDetails,updataAvatar,updateCover};
+const getUserChannelProfile  = asyncHandler(async(req,res)=>{
+    const {username} = req.params;
+    if (!username?.trim()) throw new ApiError(400,"username required ");
+    const channel = await User.aggregate([
+        {
+            $match:{
+                username:username.toLowerCase()
+            }
+        },
+        {
+            $lookup:{
+                from:"subscriptions",     // model name in database 
+                localField:"_id",
+                foreignField:"channel",     // to get no of subscriber of a channel,this give channel document(anlaogy - object ) with _id 
+                as:"subscribers"
+            }
+        },
+        {
+            $lookup:{
+                from:"subscriptions",
+                localField:"_id",
+                foreignField:"subscriber",    // To get channel Subscribed To , give document where id matches with subscriber  
+                as:"subscribedTo",
+            }
+        },
+        {
+            $addFields:{
+                subscriberCount:{
+                    $size:"$subscribers",
+                },
+                channelSubscribedCount:{
+                    $size:"$subscribedTo",
+                },
+                issubscribed:{
+                    $cond:{
+                        if:{$in:[req.user?._id,"$subscribers.subscriber"]},    // lookup made feild.field in model Subscription
+                        then:true,
+                        else:false,
+                    }
+                }
+            }
+        },
+        {
+            $project:{
+                fullname:1,
+                username:1,
+                subscriberCount:1,
+                channelSubscribedCount:1,
+                issubscribed:1,
+                avatar:1,
+                coverimage:1,
+                email:1,
+            }
+        }
+    ])
+    if (!channel?.length){
+        throw new ApiError(400,"No channel found ");
+    }
+    console.log(channel);
+    return res.status(200).json(new ApiResponse(200,channel[0],"Channel profile Detail sent Successfully "))
+})
+
+export {registeruser,LoginUser,logoutUser,refreshAccessToken,changePassword,getCurrUser,UpdateAccountDetails,updataAvatar,updateCover,getUserChannelProfile};
