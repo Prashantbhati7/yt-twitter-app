@@ -132,11 +132,15 @@ const LoginUser = asyncHandler(async(req,res)=>{
 const logoutUser = asyncHandler(async(req,res)=>{          // we need to create a middleware to logout user 
     await User.findByIdAndUpdate(req.user._id,
         {
-        $set:
-        {
-        refreshToken:undefined
+            $unset:     // This remove the field from document 
+            {
+                refreshToken:1,
+            },
         },
-    },{new:true});
+        {
+            new:true
+        }
+    );
 
     const options = {
         httpOnly:true,
