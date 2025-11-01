@@ -8,7 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
 import jwt from "jsonwebtoken";
-import { compareSync } from "bcrypt";
+import { compareSync } from "bcrypt"
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
@@ -22,7 +22,7 @@ const generateAccessAndRefreshToken = async(userId)=>{
         // saving refresh token of that particular user in database 
 
         user.refreshToken = refreshToken;
-        await user.save({validateBeforeSave:false});
+        await user.save({validateBeforeSave:false}); 
 
         return {refreshToken,accessToken};
 
@@ -93,7 +93,9 @@ const registeruser = asyncHandler(async(req ,res)=>{
 
     const accessToken = await userRegistered.generateAccessToken();
     const refreshToken = await  userRegistered.generateRefreshToken();
-
+    userRegistered.refreshToken = refreshToken ;
+    await userRegistered.save({validateBeforeSave:false})
+    // const {refreshToken,accessToken} = await generateAccessAndRefreshToken(userRegistered._id);
     if (!accessToken || !refreshToken ) throw new ApiError(401,{},"access tokens not generated ");
 
 
@@ -106,7 +108,7 @@ const registeruser = asyncHandler(async(req ,res)=>{
     }
     return res.status(200).cookie(
         "accessToken",accessToken,options
-    ).cookie("refreshToken",refreshToken,options).json(new ApiResponse(200,userRegistered,"user registedred successfully ! "))
+    ).cookie("refreshToken",refreshToken).json(new ApiResponse(200,userRegistered,"user registedred successfully ! "))
 })
 
 
@@ -290,7 +292,7 @@ const getUserChannelProfile  = asyncHandler(async(req,res)=>{
             }
         },
         {
-            $lookup:{
+            $lookup:{  
                 from:"subscriptions",
                 localField:"_id",
                 foreignField:"subscriber",    // To get channel Subscribed To , give document where id matches with subscriber  
